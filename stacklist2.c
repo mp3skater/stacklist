@@ -11,94 +11,66 @@
  * 	2024/01/25 -- mp3skater: Despared try to debug the code as push allways gives the latest number.
  * 	2024/01/31 -- mp3skater: Tidyed up code, corrected push to get the last inserted value not the last value of the list
  * 	2024/02/17 -- mp3skater: Changed value type to double, cleaned up pop(), changed error message in double
- *
+ *  2024/10/02 -- mp3skater: Used void pointer to store data for easy changes down the line
  */
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stddef.h>
-
 #include "stack.h"
 
-static list_t *head = NULL; // The firt element of the stack
+static list_t* head = NULL; // The first element of the stack
 
 /*
- * Parameter: Integer Value that gets added to the list.
- * Return: -1: Error, stack wast't added. Probably becouse allocated memory is full.
- * 	    0: Push was successfull.
- * Sideeffects: A new list_t-element gets added,
- * 	pointer of that list_t-element directs to the last head;
- * Usage: This function adds a new element to the stack, increasing the space needed.
- *
+ * Pushes a new element onto the stack.
+ * Parameter: new_value (pointer to the new value to be added to the stack).
+ * Return: -1 on error (e.g., memory allocation failure), 0 on success.
  */
-int push(double new_value)
+int push(void* new_value)
 {
-  // ONE ELEMENT
-  if(head == NULL) {
-    head = (list_t*)malloc(sizeof(list_t));
-    
-    // MALLOC DIDN'T WORK
-    if(head == NULL) {
-      // Schimpfen...
-      fprintf(stderr, "--> Error: Couldn't allocate memory, probably out of allocated memory.");
-      return -1;
+    // One Element
+    if (head == NULL) {
+        head = (list_t*)malloc(sizeof(list_t));
+        
+        if (head == NULL) {
+            fprintf(stderr, "--> Error: Couldn't allocate memory, probably out of allocated memory.");
+            return -1;
+        }
+
+        head->next = NULL;
+        head->value = new_value;
+    } else {
+        // Multiple Elements
+        list_t* new_l = (list_t*)malloc(sizeof(list_t));
+
+        if (new_l == NULL) {
+            fprintf(stderr, "--> Error: Couldn't allocate memory, probably out of allocated memory.");
+            return -1;
+        }
+
+        new_l->value = new_value;
+        new_l->next = head;
+        head = new_l;
     }
 
-    // MALLOC WORKED
-    (*head).next = NULL;
-    (*head).value = new_value;
-  }
-
-
-  // MULTIPLE ELEMENTS
-  list_t *new_l = (list_t*)malloc(sizeof(list_t));
-
-  // MALLOC DIDN'T WORK
-  if(new_l == NULL) {
-    // Schimpfen...
-    fprintf(stderr, "--> Error: Couldn't allocate memory, probably out of allocated memory.");
-    return -1;
-  }
-
-  // MALLOC WORKED
-
-  // New list_t with pointer to last head
-  (*new_l).value = new_value;
-  (*new_l).next = head;
-  head = new_l;
-
-  return 0;
+    return 0;
 }
 
 /*
- *
- * Parameter: /
- * Return: The pop()ed number.
- * Sideeffects: The last element gets deleted,
- *      pointer of the new last element gets reset to NULL;
- * Usage: The first element of the list gets returned and deleted.
- *
+ * Pops the top element from the stack and returns the value (as a void*).
+ * Return: Pointer to the popped value, or NULL if the stack is empty.
  */
-double pop(void)
+void* pop(void)
 {
-  // No Elements
-  if(head == NULL) {
-    fprintf(stderr, "Stacklist Notice: No elements available to pop(), add a new element to use this funktion.");
-    return -1;
-  }
- 
-  list_t *next_l = (*head).next;
-  
-  // One Element
-  if(next_l == NULL) {
-    double temp = head -> value;
-    free(head);
-    return temp;
-  }
+    if (head == NULL) {
+        fprintf(stderr, "Stacklist Notice: No elements available to pop().");
+        return NULL;
+    }
 
-  // Multiple Elements
-  double temp = head -> value;
-  free(head);
-  head = next_l;
-  return temp;
+    list_t* next_l = head->next;
+    void* temp_value = head->value;
+
+    free(head);
+    head = next_l;
+
+    return temp_value;
 }
